@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  urlshortener-frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - REACT_APP_API_ENDPOINT=http://urlshortener-backend:3000/api
+      - REACT_APP_PORT=3001
+      - DATABASE_URI=mongodb://urlshortener-mongo:27017/url-shortener
+    depends_on:
+      - urlshortener-backend
+    networks:
+      - urlshortener-network
+
+  urlshortener-backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      target: production # Change to 'development' for dev environment
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - API_BASE=http://localhost:3000
+      - SERVER_PORT=3000
+      - MONGO_URI=mongodb://urlshortener-mongo:27017/url-shortener
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    depends_on:
+      - urlshortener-mongo
+    networks:
+      - urlshortener-network
+
+  urlshortener-mongo:
+    image: mongo:5.0
+    container_name: urlshortener-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - urlshortener-mongo-data:/data/db
+    networks:
+      - urlshortener-network
+
+volumes:
+  urlshortener-mongo-data:
+
+networks:
+  urlshortener-network:
+    driver: bridge
